@@ -8,19 +8,22 @@ from langchain_community.document_loaders import PyPDFLoader
 # Load environment variables
 load_dotenv()
 
-def load_and_process_document():
+def clear_index():
     try:
-        # Load the PDF document
-        loader = PyPDFLoader(r"C:\Users\Personal\Gen AI\Gen AI Hands-on practise\kyc_rag_assistant\data\Regulatory-Notice-17-40.pdf")
-        documents = loader.load()
-        print(f"Successfully loaded document with {len(documents)} pages")
-        return documents
+        pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY'))
+        index = pc.Index('kyc-index')
+        index.delete(delete_all=True)
+        print("Cleared all vectors from index")
     except Exception as e:
-        print(f"Error loading document: {e}")
-        return None
+        print(f"Error clearing index: {e}")
 
-def split_documents(documents):
+def process_uploaded_pdf(file_path):
     try:
+        # Load and process the PDF
+        loader = PyPDFLoader(file_path)
+        documents = loader.load()
+        
+        # Split documents
         text_splitter = CharacterTextSplitter(
             separator="\n",
             chunk_size=1000,
@@ -28,17 +31,9 @@ def split_documents(documents):
             length_function=len
         )
         chunks = text_splitter.split_documents(documents)
-        print(f"Split documents into {len(chunks)} chunks")
-        return chunks
-    except Exception as e:
-        print(f"Error splitting documents: {e}")
-        return None
-
-def create_embeddings_and_store(chunks):
-    try:
-        embeddings = OpenAIEmbeddings()
-        print("Creating embeddings for chunks...")
         
+        # Create embeddings and store
+        embeddings = OpenAIEmbeddings()
         pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY'))
         index = pc.Index('kyc-index')
         
@@ -49,14 +44,7 @@ def create_embeddings_and_store(chunks):
                 'values': embedding,
                 'metadata': {'text': chunk.page_content}
             }])
-        print(f"Successfully stored {len(chunks)} embeddings in Pinecone")
+        
+        return True, f"Successfully processed {len(chunks)} chunks"
     except Exception as e:
-        print(f"Error creating/storing embeddings: {e}")
-
-if __name__ == "__main__":
-    # Run the entire process
-    documents = load_and_process_document()
-    if documents:
-        chunks = split_documents(documents)
-        if chunks:
-            create_embeddings_and_store(chunks)
+        return False, str(e)
