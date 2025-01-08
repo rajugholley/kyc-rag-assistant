@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import tempfile
-from document_processor import process_uploaded_pdf, clear_index
+from document_processor_enhanced import process_and_analyze_pdf, store_in_pinecone
 from rag_app import query_pinecone
 
 def main():
