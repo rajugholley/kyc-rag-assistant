@@ -1,5 +1,3 @@
-from pdf2image import convert_from_path
-import fitz  # PyMuPDF
 import pdfplumber
 from langchain.schema import Document
 from langchain_openai import OpenAIEmbeddings
